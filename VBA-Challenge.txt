@@ -1,0 +1,108 @@
+Sub VBAChallenge()
+    Dim ws As Worksheet
+    Dim Row As Single
+    Dim TotalRows As Single
+    Dim Ticker As String
+    Dim TickerPrevious As String
+    Dim TickerNext As String
+    Dim OpeningPriceBeginning As Single
+    Dim ClosingPriceEnd As Single
+    Dim TickerBegin As Single
+    Dim TickerEnd As Single
+    Dim StockVolume As Single
+    Dim TickerRow As Single
+    Dim YearlyChange As Single
+    Dim PercentChange As Single
+    Dim GreatestIncrease As Single
+    Dim GreatestDecrease As Single
+    Dim GreatestVolume As Single
+    Dim i As Single
+    
+For Each ws In ActiveWorkbook.Worksheets
+    'Clearing columns 9-12
+    For i = 9 To 17
+        ws.Columns(i).Clear
+    Next i
+    'Adding column headers
+    ws.Cells(1, 9) = "Ticker"
+    ws.Cells(1, 10) = "yearly Change"
+    ws.Cells(1, 11) = "Percent Change"
+    ws.Cells(1, 12) = "Total Stock Volume"
+    ws.Cells(1, 16) = "Ticker"
+    ws.Cells(1, 17) = "Value"
+    ws.Cells(2, 15) = "Greatest % Increase"
+    ws.Cells(3, 15) = "Greatest % Decrease"
+    ws.Cells(4, 15) = "Greatest Total Volume"
+    'Count # of rows
+    TotalRows = ws.UsedRange.Rows.Count
+    'Resetting variables
+    TickerRow = 1
+    TickerEnd = False
+    TickerBegin = False
+    'Populating columns I, J, K, and L
+    For Row = 2 To TotalRows
+        'Finding current, previous, and next Ticker
+        Ticker = ws.Cells(Row, 1)
+        TickerPrevious = ws.Cells(Row - 1, 1)
+        TickerNext = ws.Cells(Row + 1, 1)
+        'if the ticker is new, then special things
+        If TickerPrevious <> Ticker Then TickerBegin = True
+        If TickerBegin = True Then
+            TickerBegin = False
+            TickerRow = TickerRow + 1
+            'Populate next Ticker name
+            ws.Cells(TickerRow, 9) = Ticker
+            'Saving the Open value at the start of this Ticker
+            OpeningPriceBeginning = ws.Cells(Row, 3)
+        End If
+        'finding Closing price for "Yearly Change" and "Yearly Percent" Column, and populating
+        If TickerNext <> Ticker Then TickerEnd = True
+        If TickerEnd = True Then
+            TickerEnd = False
+            ClosingPriceEnd = ws.Cells(Row, 6)
+            'Calculating "Yearly Change" and "Percent Change"
+            YearlyChange = ClosingPriceEnd - OpeningPriceBeginning
+            PercentChange = ClosingPriceEnd / OpeningPriceBeginning - 1
+            'Populating "Yearly Change" and "Percent Change"
+            ws.Cells(TickerRow, 10) = YearlyChange
+            ws.Cells(TickerRow, 11) = PercentChange
+        End If
+        'Adding up Total Stock Volume for current ticker
+        StockVolume = ws.Cells(Row, 7)
+        ws.Cells(TickerRow, 12) = ws.Cells(TickerRow, 12) + StockVolume
+    Next Row
+    'formatting
+        'formatting yearly change column to 2 decimals
+        ws.Range("J:J").NumberFormat = "0.00"
+        'formatting percent change column to percentage (2 decimal)
+        ws.Range("K:K").NumberFormat = "0.00%"
+        'formatting a red fill color for yearly changes less than 0
+        With ws.Range("J:J").FormatConditions.Add(Type:=xlCellValue, Operator:=xlLess, Formula1:="0")
+            .Interior.Color = RGB(255, 0, 0)
+        End With
+        'formatting a green fill color for greater than or equal to 0
+        With ws.Range("J2:J" & TickerRow).FormatConditions.Add(Type:=xlCellValue, Operator:=xlBetween, Formula1:="0", Formula2:="1000")
+            .Interior.Color = RGB(0, 255, 0)
+        End With
+        'formatting 2 more cells to percentage (2 decimal)
+        ws.Range("Q2:Q3").NumberFormat = "0.00%"
+    'Populating columns P and Q
+    For Row = 2 To TickerRow
+        'populating greatest increase
+        If ws.Cells(Row, 11) > ws.Cells(2, 17) Then
+            ws.Cells(2, 16) = ws.Cells(Row, 9)
+            ws.Cells(2, 17) = ws.Cells(Row, 11)
+        End If
+        'populating greatest decrease
+        If ws.Cells(Row, 11) < ws.Cells(3, 17) Then
+            ws.Cells(3, 16) = ws.Cells(Row, 9)
+            ws.Cells(3, 17) = ws.Cells(Row, 11)
+        End If
+        'populating greatest total volume
+        If ws.Cells(Row, 12) > ws.Cells(4, 17) Then
+            ws.Cells(4, 16) = ws.Cells(Row, 9)
+            ws.Cells(4, 17) = ws.Cells(Row, 12)
+        End If
+    Next Row
+Next ws
+End Sub
